@@ -1,4 +1,5 @@
 import Data.List
+import Control.Concurrent
 
 -- connect 4 board is 7x6
 data Piece = Red | Yellow deriving (Show)
@@ -8,6 +9,8 @@ data Token = Token { row :: Row
                    , column :: Col
                    , piece :: Piece } deriving (Show) 
 
+data GameState = Moving | Playing
+
 main :: IO ()
 main = connect4
 
@@ -16,24 +19,47 @@ connect4 = do
   putStrLn "Welcome to Connect λ"
   putStrLn "\nPress ENTER to begin..."
   _ <- getLine
-  gameLoop []
+  gameLoop Playing []
 
-gameLoop :: [Token] -> IO ()
-gameLoop tokens = do
+gameLoop :: GameState -> [Token] -> IO ()
+gameLoop state tokens = do
+  threadDelay 500000
+  putStrLn "\ESC[2J"
+  gameStep state tokens
+
+gameStep :: GameState -> [Token] -> IO ()
+gameStep Moving xs = animateTokens xs
+gameStep Playing xs = playerMove xs
+
+animateTokens :: [Token] -> IO ()
+animateTokens tokens = do
+  showBoard tokens
+  let updatedTokens = dropTokens tokens
+  let state = getUpdatedState tokens updatedTokens
+  gameLoop state updatedTokens
+
+-- return list of tokens where any that can move are 1 step lower
+dropTokens :: [Token] -> [Token]
+dropTokens t = t
+
+-- if all tokens match then Playing else Moving
+getUpdatedState :: [Token] -> [Token] -> GameState
+getUpdatedState xs ys = Moving
+
+playerMove :: [Token] -> IO ()
+playerMove tokens = do
   move <- getCommand tokens
   putStrLn ("You picked " ++ [move])
   let token = getToken Red move
-  putStrLn ("Token: " ++ (show token))
   nextLoop token tokens
 
 nextLoop :: Maybe Token -> [Token] -> IO ()
-nextLoop (Just token) xs = gameLoop (token: xs)
-nextLoop Nothing xs      = gameLoop xs
+nextLoop (Just token) xs = gameLoop Moving (token: xs)
+nextLoop Nothing xs      = gameLoop Moving xs
 
 
 getCommand :: [Token] -> IO Char
 getCommand t = do
-  putStrLn "\ESC[2J"
   showBoard t
   putStrLn "Player 1, choose a column:"
   move <- getChar
