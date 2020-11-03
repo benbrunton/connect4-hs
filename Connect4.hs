@@ -39,7 +39,9 @@ gameStep Win xs p = winner (rotatePlayer p)
 
 winner :: Piece -> IO()
 winner p = do
-  putStrLn ((show p) ++ " player wins!")
+  putStrLn (setSGRCode [
+      SetColor Foreground Dull System.Console.ANSI.White
+    ] ++ ((show p) ++ " player wins!"))
   connect4
 
 -- moves tokens and sets state to playing / moving
