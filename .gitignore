@@ -3,3 +3,4 @@
 Connect4
 *.swo
 *.swp
+dist/
